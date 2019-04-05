@@ -30,11 +30,16 @@ public class BasePDU extends BaseOps{
 
         int commandLength = 0;
         int commandId =0;
+        buff.mark();
+        int start_pos=buff.position();
         try {
          commandLength = buff.getInt();
          commandId = buff.getInt();
         }catch(BufferUnderflowException e){
+            buff.position(buff.limit());
+            return null;
         }
+
         final BasePDU pdu=switch(commandId) {
             case ENQUIRE_LINK -> new EnquireLink();
             case ENQUIRE_LINK_RESP -> new EnquireLinkResp();
@@ -42,10 +47,14 @@ public class BasePDU extends BaseOps{
             case BIND_TRANSCEIVER_RESP -> new BindResp();
             default -> null;
         };
-        buff.rewind();
-        if (pdu!=null && pdu.setBytes(buff))
+        buff.position(start_pos);
+        if (pdu!=null && pdu.setBytes(buff)) {
             return pdu;
-        else return null;
+        }
+        else {
+            buff.position(buff.limit());
+            return null;
+        }
     }
 
     protected ByteBuffer getBody() {
@@ -77,21 +86,17 @@ public class BasePDU extends BaseOps{
     }
 
     protected boolean setBytes(ByteBuffer buff) {
-        int length=buff.remaining();
-        if (length<HEADER_SIZE)
-            return false;
+
         start_position=buff.position();
         if (!setHeader(buff)) {
-            buff.position(start_position);
+
             return false;
         }
         if (!setBody(buff)) {
-            buff.position(start_position);
             return false;
         }
         while (buff.position()-start_position<commandLength) {
             if (!setOptional(buff)) {
-                buff.position(start_position);
                 return false;
             }
         }
@@ -126,8 +131,12 @@ public class BasePDU extends BaseOps{
             sequenceNumber = buff.getInt();
             return true;
         }catch(BufferUnderflowException e){
-            e.printStackTrace();
+           // e.printStackTrace();
         }
+        commandLength = 0;
+        commandId = 0;
+        commandStatus = 0;
+        sequenceNumber = 0;
         return false;
     }
 

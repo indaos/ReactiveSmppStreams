@@ -14,19 +14,20 @@ public class BindResp extends BasePDU {
     protected ByteBuffer getBody() {
         ByteBuffer buff=null;
         if (getCommandStatus()==0) {
-            buff=ByteBuffer.allocate(systemId.length());
-            putString(buff,systemId,null);
+            buff=ByteBuffer.allocate(systemId.length()+1);
+            putString(buff,systemId);
         }
+        buff.flip();
         return buff;
     }
 
     protected boolean setBody(ByteBuffer buff) {
         if (getCommandStatus() == 0) {
             try {
-                systemId = getString(buff, null);
+                systemId = getString(buff);
                 return true;
             }catch (BufferUnderflowException e) {
-                e.printStackTrace();
+              //  e.printStackTrace();
             }
             return false;
         }

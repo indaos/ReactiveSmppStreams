@@ -28,7 +28,7 @@ public class AppTest {
             0xa,0x0,0x2,0x0,0x14,0x2,0xb,0x0,0x2,0x0,
             0x14,0x4,0x27,0x0,0x1,0x1};
 
-    @Test
+
     public void pduTest() {
 
         BasePDU pdu=BasePDU.newPDU(ByteBuffer.wrap(sample_pdu));
@@ -36,7 +36,7 @@ public class AppTest {
         System.out.println(pdu.toString());
     }
 
-    @Test
+
     public void tempTest() {
         SmppClient client = SmppClient.builder()
                 .bindIp("localhost").host("localhost").port(5000)
@@ -55,13 +55,12 @@ public class AppTest {
                     .setNpi((byte)1));
 
         BasePDU pdu;
-        assertNotNull(pdu=client.getNextPdu(10000));
-        System.out.println(pdu.toString());
+        assertNotNull(client.getNextPdu(10000));
     }
 
 
 
-
+    @Test
     public void simpleConnectionTest() throws IOException, InterruptedException {
         int port = BASE_PORT + new Random().nextInt(1000);
         TestSmppServer server = new TestSmppServer()
@@ -70,20 +69,37 @@ public class AppTest {
         server.run();
 
         SmppClient client = SmppClient.builder()
-                .bindIp("localhost").port(port)
+                .bindIp("localhost").host("localhost").port(port)
                 .username("guest").password("guest")
                 .systype("ReSmpp").timeout(30 * 1000)
-                .maxmps(1)
+                .maxmps(2)
                 .newClient();
 
         assertTrue(client.connect());
 
         client.processing();
 
-       // client.send(new BasePDU(0));
+        for(int i=0;i<100;i++) {
+            client.send(new Bind().setSystemId("sys")
+                    .setPassword("secret")
+                    .setSysType("mock")
+                    .setTon((byte) 1)
+                    .setNpi((byte) 1));
+            SmppClient.LOG.info("Client>"+i+". sent");
 
-        assertNotNull(client.getNextPdu(10000));
+            try{
+                Thread.sleep(new Random().nextInt(200));
 
+            }catch(InterruptedException e){}
+        }
+        try{
+            Thread.sleep(new Random().nextInt(6000));
+        }catch(InterruptedException e){}
+
+        for(int i=0;i<100;i++) {
+            assertNotNull(client.getNextPdu(10000));
+            SmppClient.LOG.info("Client<"+i+". got");
+        }
         client.close();
         server.close();
     }

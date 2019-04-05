@@ -26,13 +26,13 @@ public class Bind extends BasePDU {
                 +addressRange.length()+1;
 
         ByteBuffer  buffer=ByteBuffer.allocate(length);
-        putString(buffer,systemId,null)
-        .putString(buffer,password,null)
-        .putString(buffer,sysType,null);
+        putString(buffer,systemId)
+        .putString(buffer,password)
+        .putString(buffer,sysType);
         buffer.put(iVersion);
         buffer.put(ton);
         buffer.put(npi);
-        putString(buffer,addressRange,null);
+        putString(buffer,addressRange);
 
         buffer.flip();
 
@@ -41,13 +41,13 @@ public class Bind extends BasePDU {
 
     protected boolean setBody(ByteBuffer buff) {
         try {
-            systemId = getString(buff, null);
-            password = getString(buff, null);
-            sysType = getString(buff, null);
+            systemId = getString(buff);
+            password = getString(buff);
+            sysType = getString(buff);
             iVersion = buff.get();
             ton = buff.get();
             npi = buff.get();
-            addressRange = getString(buff, null);
+            addressRange = getString(buff);
             return true;
         }catch(BufferUnderflowException e) {
             e.printStackTrace();

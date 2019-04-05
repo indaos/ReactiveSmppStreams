@@ -1,6 +1,5 @@
 package com.mobico.resmpprest.smpp.pdu;
 
-import java.io.UnsupportedEncodingException;
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
@@ -23,29 +22,22 @@ public class BaseOps {
 
     public BaseOps() { }
 
-    public  BaseOps putString(ByteBuffer buff,String str,String encoding)  throws BufferOverflowException {
-        try {
-            byte[] arr = encoding == null ? str.getBytes() : str.getBytes(encoding);
-            buff.put(arr);
-            buff.put((byte)0);
-        }catch(UnsupportedEncodingException exc) {
-            exc.printStackTrace();
-        }
+    public  BaseOps putString(ByteBuffer buff,String str)  throws BufferOverflowException {
+
+         byte[] arr = str.getBytes();
+         buff.put(arr);
+         buff.put((byte)0);
+
         return this;
     }
 
-    public  String getString(ByteBuffer buff,String encoding) throws BufferUnderflowException {
-        int length=0;
-        while(buff.hasRemaining()) {
-            if (buff.get()==0) break;
-            length++;
+    public  String getString(ByteBuffer buff) throws BufferUnderflowException {
+
+        StringBuilder sb=new StringBuilder();
+        byte b;
+        while((b=buff.get())!=0) {
+            sb.append((char)b);
         }
-        byte[] arr=new byte[length];
-        try{
-            return encoding == null ?new String(arr):new String(arr,encoding);
-        }catch(UnsupportedEncodingException exc) {
-            exc.printStackTrace();
-        }
-        return null;
+        return sb.toString();
     }
 }
