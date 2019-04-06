@@ -1,13 +1,16 @@
 package com.mobico.resmpprest.smpp.pdu;
 
+import com.mobico.resmpprest.smpp.SmppClient;
+
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 
-public class BasePDU extends BaseOps{
+public class BasePDU implements BaseOps{
 
     private final int HEADER_SIZE=16;
 
@@ -22,6 +25,7 @@ public class BasePDU extends BaseOps{
     private int start_position=0;
 
     protected BasePDU(int cid) {
+
         commandId = cid;
     }
 
@@ -30,8 +34,7 @@ public class BasePDU extends BaseOps{
 
         int commandLength = 0;
         int commandId =0;
-        buff.mark();
-        int start_pos=buff.position();
+        int start_pos=buff.mark().position();
         try {
          commandLength = buff.getInt();
          commandId = buff.getInt();
@@ -39,15 +42,24 @@ public class BasePDU extends BaseOps{
             buff.position(buff.limit());
             return null;
         }
-
+        buff.position(start_pos);
         final BasePDU pdu=switch(commandId) {
             case ENQUIRE_LINK -> new EnquireLink();
             case ENQUIRE_LINK_RESP -> new EnquireLinkResp();
             case BIND_TRANSCEIVER -> new Bind();
             case BIND_TRANSCEIVER_RESP -> new BindResp();
+            case SUBMIT -> new Submit();
+            case SUBMIT_RESP -> new SubmitResp();
+            case DATA -> new DataResp();
+            case DATA_RESP -> new DataResp();
+            case DELIVER -> new Deliver();
+            case DELIVER_RESP -> new DataResp();
+            case UNBIND -> new Unbind();
+            case UNBIND_RESP -> new UnbindResp();
+            case GENERIC_NACK -> new Generic_Nack();
             default -> null;
         };
-        buff.position(start_pos);
+
         if (pdu!=null && pdu.setBytes(buff)) {
             return pdu;
         }
@@ -66,6 +78,27 @@ public class BasePDU extends BaseOps{
             return true;
     }
 
+    public static BasePDU of(BasePDU pdu) {
+        final BasePDU resp=switch(pdu.getCommandId()) {
+            case ENQUIRE_LINK -> new EnquireLinkResp();
+            case BIND_TRANSCEIVER -> new BindResp();
+            case SUBMIT -> new SubmitResp();
+            case DATA -> new DataResp();
+            case DATA_RESP -> new DataResp();
+            case DELIVER -> new DeliverResp();
+            case UNBIND -> new UnbindResp();
+            default -> null;
+        };
+        if (resp!=null) resp.setSequenceNumber(pdu.getSequenceNumber());
+        return resp;
+    }
+
+    public BasePDU setseqId() {
+        setSequenceNumber(SmppClient.getNextSeqNumber());
+        return this;
+    }
+
+
     public ByteBuffer getBytes() {
 
         ByteBuffer header=getHeader();
@@ -78,14 +111,14 @@ public class BasePDU extends BaseOps{
 
         ByteBuffer pduBuff=ByteBuffer.allocate(pdu_len);
         pduBuff.put(header);
-        Optional.of(body).ifPresent(b->pduBuff.put(b));
-        Optional.of(tlv_opt).ifPresent(b->pduBuff.put(b));
+        Optional.ofNullable(body).ifPresent(b->pduBuff.put(b));
+        Optional.ofNullable(tlv_opt).ifPresent(b->pduBuff.put(b));
         pduBuff.flip();
 
         return pduBuff;
     }
 
-    protected boolean setBytes(ByteBuffer buff) {
+    public boolean setBytes(ByteBuffer buff) {
 
         start_position=buff.position();
         if (!setHeader(buff)) {
@@ -204,5 +237,12 @@ public class BasePDU extends BaseOps{
                 .append(Integer.toHexString(commandId)).append(",")
                 .append(Integer.toHexString(commandStatus)).append("}")
                 .toString();
+    }
+
+    public String tlvToString() {
+
+        return optional.stream()
+                .map(e->e.toString())
+                .collect(Collectors.joining(","));
     }
 }

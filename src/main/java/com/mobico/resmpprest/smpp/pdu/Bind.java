@@ -17,28 +17,25 @@ public class Bind extends BasePDU {
         super(BIND_TRANSCEIVER);
     }
 
+    @Override
     protected ByteBuffer getBody() {
 
-        int length=systemId.length()+1
-                +password.length()+1
-                +sysType.length()+1
-                +Byte.BYTES*3
-                +addressRange.length()+1;
+        ByteBuffer buff = ByteBuffer.allocate(getObjectSize());
 
-        ByteBuffer  buffer=ByteBuffer.allocate(length);
-        putString(buffer,systemId)
-        .putString(buffer,password)
-        .putString(buffer,sysType);
-        buffer.put(iVersion);
-        buffer.put(ton);
-        buffer.put(npi);
-        putString(buffer,addressRange);
+        putString(buff,systemId)
+        .putString(buff,password)
+        .putString(buff,sysType);
+        buff.put(iVersion);
+        buff.put(ton);
+        buff.put(npi);
+        putString(buff,addressRange);
 
-        buffer.flip();
+        buff.flip();
 
-        return buffer;
+        return buff;
     }
 
+    @Override
     protected boolean setBody(ByteBuffer buff) {
         try {
             systemId = getString(buff);

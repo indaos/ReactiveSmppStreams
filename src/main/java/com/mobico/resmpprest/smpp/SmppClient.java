@@ -8,15 +8,15 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.ReadPendingException;
-import java.util.Date;
 import java.util.concurrent.*;
-import java.util.logging.*;
 
 
 public class SmppClient {
     private final long DEFAULT_READ_TIMEOUT = 10000L;
     private final int DEFAULT_READ_BUFFER_SIZE = 4096;
     private final int MAX_PENDING_BUFFER_SIZE = 64 * 1024;
+
+    private static  int  seq_id;
 
     private BuilderImpl conf;
     private AsynchronousSocketChannel channel;
@@ -25,25 +25,6 @@ public class SmppClient {
     private Semaphore exitSem = new Semaphore(2);
     private boolean isCloseState=false;
 
-    public final static Logger LOG = Logger.getLogger(SmppClient.class.getName());
-    private static final ConsoleHandler handler = new ConsoleHandler();
-
-    static {
-        handler.setFormatter(new SimpleFormatter() {
-            private static final String format = "[%1$tF %1$tT] [%2$-7s] %3$s %n";
-            @Override
-            public synchronized String format(LogRecord lr) {
-                return String.format(format,
-                        new Date(lr.getMillis()),
-                        lr.getLevel().getLocalizedName(),
-                        lr.getMessage()
-                );
-            }
-        });
-        LOG.addHandler(handler);
-        LOG.setLevel(Level.INFO);
-        LOG.setUseParentHandlers(false);
-    }
 
     private SmppClient() {
     }
@@ -64,7 +45,6 @@ public class SmppClient {
             if (raddr == null)
                 return false;
             boolean result=channel.isOpen();
-            LOG.info("connection state="+result);
             return result;
         } catch (IOException
                 | InterruptedException
@@ -77,12 +57,10 @@ public class SmppClient {
 
     public void close() {
         try {
-            LOG.info("prepare to quit");
             isCloseState=true;
             int cycle=0;
             while(exitSem.availablePermits()<2 && ++cycle<120)
                 Thread.sleep(100);
-            LOG.info("quit permits="+exitSem.availablePermits());
             channel.close();
         } catch (InterruptedException
                 | IOException e) {
@@ -90,11 +68,18 @@ public class SmppClient {
         }
     }
 
+    public static synchronized  int getNextSeqNumber() {
+        return ++seq_id;
+    }
+    public static synchronized  void resetSeqNumber() {
+         seq_id=0;
+    }
+
+
     private boolean getPduWillBeMore(ByteBuffer buffer) {
         BasePDU pdu;
         while((pdu=BasePDU.newPDU(buffer))!=null) {
             input_queue.add(pdu);
-            LOG.info(" **added "+pdu.toString()+","+buffer.position()+","+ buffer.limit());
             if (buffer.position()==buffer.limit()) {
                 buffer.clear();
                 return false;
@@ -135,7 +120,6 @@ public class SmppClient {
             try {
                 exitSem.acquire();
             } catch(InterruptedException e){}
-            LOG.info("the reading thread started");
             int num_read=0;
             while(num_read>=0 && !isCloseState) {
                 Future<Integer> result;
@@ -151,8 +135,10 @@ public class SmppClient {
                     num_read = result.get(DEFAULT_READ_TIMEOUT,TimeUnit.MILLISECONDS);
                 }catch(InterruptedException
                         | ExecutionException e){
-                    e.printStackTrace();
+                  //  e.printStackTrace();
                 } catch ( TimeoutException e) {
+                    continue;
+                } catch (Exception e) {
                     continue;
                 }
                 if (num_read == -1) {
@@ -175,7 +161,6 @@ public class SmppClient {
                 }
             }
             exitSem.release();
-            LOG.info("the reading thread exited");
         });
 
         ScheduledExecutorService write_executor = Executors.newScheduledThreadPool(1);
@@ -187,10 +172,9 @@ public class SmppClient {
             try {
                 exitSem.acquire();
             } catch(InterruptedException e){}
-            LOG.info("the writing thread started");
             BasePDU pdu = output_queue.poll();
             if (pdu != null) {
-                //LOG.info("prepare to write "+pdu.toString());
+            //    LOG.info("prepare to write "+pdu.toString());
                 ByteBuffer pduBytes = pdu.getBytes();
                 while(pduBytes.hasRemaining() && !isCloseState) {
                     Future<Integer> result = channel.write(pduBytes);
@@ -213,11 +197,9 @@ public class SmppClient {
                         exitSem.release();
                         return;
                     }
-                    LOG.info(num_written+"("+pduBytes.remaining()+") bytes written");
                 }
             }
             exitSem.release();
-            LOG.info("the writing thread exited");
         };
 
         int period = 1;
@@ -238,7 +220,7 @@ public class SmppClient {
         long start = System.currentTimeMillis();
         while ((res = input_queue.poll()) == null) {
             try {
-                Thread.sleep(1);
+                Thread.sleep(5);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

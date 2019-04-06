@@ -44,4 +44,8 @@ public class TLV {
         return tlv_bytes;
     }
 
+    public String toString() {
+        return "{"+tag+"}";
+    }
+
 }

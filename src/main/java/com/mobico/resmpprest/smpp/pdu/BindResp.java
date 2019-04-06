@@ -11,17 +11,19 @@ public class BindResp extends BasePDU {
         super(BIND_TRANSCEIVER_RESP);
     }
 
-    protected ByteBuffer getBody() {
+    @Override
+    public ByteBuffer getBody() {
         ByteBuffer buff=null;
         if (getCommandStatus()==0) {
-            buff=ByteBuffer.allocate(systemId.length()+1);
+            buff = ByteBuffer.allocate(getObjectSize());
             putString(buff,systemId);
         }
         buff.flip();
         return buff;
     }
 
-    protected boolean setBody(ByteBuffer buff) {
+    @Override
+    public boolean setBody(ByteBuffer buff) {
         if (getCommandStatus() == 0) {
             try {
                 systemId = getString(buff);
