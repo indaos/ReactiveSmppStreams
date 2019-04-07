@@ -1,8 +1,7 @@
 package com.mobico.resmpprest.smpp;
 
-import com.mobico.resmpprest.smpp.SmppClient.Builder;
 
-public class BuilderImpl implements SmppClient.Builder {
+public class BuilderImpl implements Builder {
 
     String bindip;
     String host;
@@ -12,6 +11,16 @@ public class BuilderImpl implements SmppClient.Builder {
     String systype;
     int time;
     int mps;
+    MultiSessionSmppClient client;
+    int index=-1;
+
+    public BuilderImpl(){
+    }
+
+    public BuilderImpl(MultiSessionSmppClient client,int index){
+        this.client=client;
+        this.index=index;
+    }
 
     @Override
     public Builder bindIp(String bindip) {
@@ -64,6 +73,10 @@ public class BuilderImpl implements SmppClient.Builder {
     @Override
     public SmppClient newClient() {
         return new SmppClient(this);
+    }
+    @Override
+    public MultiSessionSmppClient client() {
+        return client;
     }
 
 }

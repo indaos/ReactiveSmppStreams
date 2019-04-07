@@ -23,7 +23,7 @@ public class SmppClient {
     private ConcurrentLinkedQueue<BasePDU> output_queue = new ConcurrentLinkedQueue();
     private ConcurrentLinkedQueue<BasePDU> input_queue = new ConcurrentLinkedQueue();
     private Semaphore exitSem = new Semaphore(2);
-    private boolean isCloseState=false;
+    private boolean isClosingState=false;
 
 
     private SmppClient() {
@@ -57,7 +57,7 @@ public class SmppClient {
 
     public void close() {
         try {
-            isCloseState=true;
+            isClosingState=true;
             int cycle=0;
             while(exitSem.availablePermits()<2 && ++cycle<120)
                 Thread.sleep(100);
@@ -121,7 +121,7 @@ public class SmppClient {
                 exitSem.acquire();
             } catch(InterruptedException e){}
             int num_read=0;
-            while(num_read>=0 && !isCloseState) {
+            while(num_read>=0 && !isClosingState) {
                 Future<Integer> result;
                 try {
                     result = channel.read(buff);
@@ -166,7 +166,7 @@ public class SmppClient {
         ScheduledExecutorService write_executor = Executors.newScheduledThreadPool(1);
 
         Runnable write_task = () -> {
-            if (!channel.isOpen() || isCloseState) {
+            if (!channel.isOpen() || isClosingState) {
                 return;
             }
             try {
@@ -176,7 +176,7 @@ public class SmppClient {
             if (pdu != null) {
             //    LOG.info("prepare to write "+pdu.toString());
                 ByteBuffer pduBytes = pdu.getBytes();
-                while(pduBytes.hasRemaining() && !isCloseState) {
+                while(pduBytes.hasRemaining() && !isClosingState) {
                     Future<Integer> result = channel.write(pduBytes);
                     int num_written=0;
                     try {
@@ -207,6 +207,14 @@ public class SmppClient {
 
     }
 
+    private void writeBytes() {
+        BasePDU pdu = output_queue.poll();
+        if (pdu != null) {
+            ByteBuffer pduBytes = pdu.getBytes();
+
+        }
+    }
+
     public void send(BasePDU pdu) {
         output_queue.add(pdu);
     }
@@ -228,26 +236,6 @@ public class SmppClient {
                 break;
         }
         return res;
-    }
-
-    public interface Builder {
-         Builder bindIp(String ip);
-
-         Builder host(String host);
-
-         Builder port(int port);
-
-         Builder username(String name);
-
-         Builder password(String pswd);
-
-         Builder systype(String type);
-
-         Builder timeout(int timeout);
-
-         Builder maxmps(int mps);
-
-         SmppClient newClient();
     }
 
 }

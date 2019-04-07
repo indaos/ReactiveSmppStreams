@@ -1,5 +1,6 @@
 package com.mobico.resmpprest;
 
+import com.mobico.resmpprest.smpp.MultiSessionSmppClient;
 import com.mobico.resmpprest.smpp.SmppClient;
 import com.mobico.resmpprest.smpp.pdu.*;
 import org.junit.After;
@@ -11,6 +12,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Date;
 import java.util.Random;
+import java.util.function.BiPredicate;
 import java.util.logging.*;
 
 import static org.junit.Assert.assertNotNull;
@@ -247,6 +249,66 @@ public class SmppTest {
 
 
         client.close();
+        LOG.info("***********************");
+
+    }
+
+    @Test
+    public void multisessionClientTest() throws InterruptedException {
+
+        LOG.info("***********************");
+
+        BiPredicate<MultiSessionSmppClient,Integer> sendSMS=(MultiSessionSmppClient client,Integer channel)->{
+            for(int i=0;i<20;i++) {
+                client.send(new Bind().setSystemId("sys")
+                        .setPassword("secret")
+                        .setSysType("mock")
+                        .setTon((byte) 1)
+                        .setNpi((byte) 1),channel==-1?(i % 2 == 0 ? 1 : 0):channel);
+                MultiSessionSmppClient.PDU pdu;
+                assertNotNull(pdu = client.getNextPdu(DEFAUL_READ_TIMEOUT));
+                LOG.info("client got: " + pdu.channel + "->" + pdu.pdu.toString());
+            }
+            return true;
+        };
+
+        server.setHandler((pdu) -> {
+            LOG.info("server got: " + pdu.toString());
+            return new BindResp().of(pdu).getBytes().array();
+        });
+
+        MultiSessionSmppClient client = MultiSessionSmppClient.newBuilder()
+                .bindIp("localhost").host("localhost").port(server.getPort())
+                .username("guest").password("guest")
+                .systype("ReSmpp").timeout(30 * 1000)
+                .maxmps(1)
+                .client();
+
+        client.newBuilder()
+                .bindIp("localhost").host("localhost").port(server.getPort())
+                .username("guest").password("guest")
+                .systype("ReSmpp").timeout(30 * 1000)
+                .maxmps(1)
+                .client();
+
+        assertTrue(client.connect(0));
+        assertTrue(client.connect(1));
+
+        client.processing();
+
+        sendSMS.test(client,-1);
+
+        client.close(0);
+        LOG.info("********* close : 0**************");
+
+        sendSMS.test(client,1);
+
+        assertTrue(client.connect(0));
+
+        LOG.info("********* connect : 0**************");
+
+        sendSMS.test(client,-1);
+
         LOG.info("***********************");
 
     }

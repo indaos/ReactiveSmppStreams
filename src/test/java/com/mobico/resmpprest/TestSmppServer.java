@@ -25,6 +25,16 @@ public class TestSmppServer {
     private ConcurrentLinkedQueue<BasePDU> input_queue = new ConcurrentLinkedQueue();
     private Function<BasePDU,byte[]> handler;
 
+    class ChannelDesc{
+        SocketChannel socket;
+        ByteBuffer buff;
+        boolean hasRemains=false;
+        ChannelDesc(SocketChannel s){
+            socket=s;
+            buff=ByteBuffer.allocate(DEFAULT_READ_BUFFER_SIZE);
+        }
+    }
+
     public TestSmppServer() {
 
     }
@@ -52,70 +62,66 @@ public class TestSmppServer {
     }
 
 
-    private boolean getPduWillBeMore(ByteBuffer buffer,SocketChannel channel) {
+    private boolean getPduWillBeMore(ChannelDesc desc) {
         BasePDU pdu;
-        while((pdu=BasePDU.newPDU(buffer))!=null) {
+        while((pdu=BasePDU.newPDU(desc.buff))!=null) {
             if (handler!=null) {
                 byte[] response = handler.apply(pdu);
                 if (response != null) {
                     try {
-                        channel.write(ByteBuffer.wrap(response));
+                        desc.socket.write(ByteBuffer.wrap(response));
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                 }
             }
-
-            if (buffer.position()==buffer.limit()) {
-                buffer.clear();
+            if (desc.buff.position()==desc.buff.limit()) {
+                desc.buff.clear();
                 return false;
             } else {
-                if (buffer.position()>buffer.capacity()*0.75)
-                    buffer.compact();
+                if (desc.buff.position()>desc.buff.capacity()*0.75)
+                    desc.buff.compact();
             }
          }
         return true;
     }
 
     public void run() {
-        final ByteBuffer buff = ByteBuffer.allocate(DEFAULT_READ_BUFFER_SIZE);
         ExecutorService main_loop = Executors.newSingleThreadExecutor();
         main_loop.execute(() -> {
-            boolean hasRemains=false;
             while (server.isOpen()) {
                 try {
-                    selector.select();
+                    selector.select(1000);
                     Set<SelectionKey> selectedKeys = selector.selectedKeys();
                     Iterator<SelectionKey> i = selectedKeys.iterator();
                     while (i.hasNext()) {
                         SelectionKey key = i.next();
-
                         if (!key.isValid()) {
                             continue;
                         }
                         if (key.isAcceptable()) {
                             SocketChannel channel = server.accept();
                             channel.configureBlocking(false);
-                            channel.register(selector, SelectionKey.OP_READ);
+                            channel.register(selector, SelectionKey.OP_READ,new ChannelDesc(channel));
 
                         } else
                         if (key.isReadable()) {
-
+                            ChannelDesc desc = (ChannelDesc)key.attachment();
                             SocketChannel channel = (SocketChannel) key.channel();
-                            int num_read=channel.read(buff);
+                            int num_read=channel.read(desc.buff);
 
                             if (num_read> 0) {
-                                buff.limit(buff.position());
-                                if (hasRemains) {
-                                    buff.reset();
-                                    hasRemains=false;
+                                desc.buff.limit(desc.buff.position());
+                                if (desc.hasRemains) {
+                                    desc.buff.reset();
+                                    desc.hasRemains=false;
                                 } else {
-                                    buff.flip();
+                                    desc.buff.flip();
                                 }
-                                if (getPduWillBeMore(buff,channel)) {
-                                    hasRemains = true;
+                                if (getPduWillBeMore(desc)) {
+                                    desc.hasRemains = true;
                                 }
-                                buff.limit(DEFAULT_READ_BUFFER_SIZE);
+                                desc.buff.limit(DEFAULT_READ_BUFFER_SIZE);
                             }
 
                         }
