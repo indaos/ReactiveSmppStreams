@@ -1,4 +1,4 @@
-package com.mobico.resmpprest.smpp;
+package com.mobico.ress.util;
 
 public interface Builder {
     Builder bindIp(String ip);
@@ -17,7 +17,9 @@ public interface Builder {
 
     Builder maxmps(int mps);
 
-    SmppClient newClient();
+    String getHost();
 
-    MultiSessionSmppClient client();
+    int getPort();
+
+    ProtocolClient newSession();
 }

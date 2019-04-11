@@ -1,4 +1,4 @@
-package com.mobico.resmpprest.smpp.pdu;
+package com.mobico.ress.resmpp.pdu;
 
 public class Generic_Nack extends BasePDU {
     public Generic_Nack() {

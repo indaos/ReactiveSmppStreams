@@ -1,4 +1,4 @@
-package com.mobico.resmpprest.smpp.pdu;
+package com.mobico.ress.resmpp.pdu;
 
 import java.lang.reflect.Field;
 import java.nio.BufferOverflowException;

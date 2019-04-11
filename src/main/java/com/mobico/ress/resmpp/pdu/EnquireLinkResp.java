@@ -1,4 +1,4 @@
-package com.mobico.resmpprest.smpp.pdu;
+package com.mobico.ress.resmpp.pdu;
 
 public class EnquireLinkResp extends BasePDU {
 

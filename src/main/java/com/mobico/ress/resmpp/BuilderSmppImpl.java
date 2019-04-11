@@ -1,26 +1,26 @@
-package com.mobico.resmpprest.smpp;
+package com.mobico.ress.resmpp;
 
 
-public class BuilderImpl implements Builder {
+import com.mobico.ress.resmpp.pdu.BasePDU;
+import com.mobico.ress.util.Builder;
+import com.mobico.ress.util.ProtocolClient;
 
-    String bindip;
-    String host;
-    int port;
-    String username;
-    String password;
-    String systype;
-    int time;
-    int mps;
-    MultiSessionSmppClient client;
-    int index=-1;
+public class BuilderSmppImpl implements Builder {
 
-    public BuilderImpl(){
+    private String bindip;
+    private String host;
+    private int port;
+    private String username;
+    private String password;
+    private String systype;
+    private int time;
+    private int mps;
+    private int index=-1;
+    private static SmppClient client=null;
+
+    public BuilderSmppImpl(){
     }
 
-    public BuilderImpl(MultiSessionSmppClient client,int index){
-        this.client=client;
-        this.index=index;
-    }
 
     @Override
     public Builder bindIp(String bindip) {
@@ -71,11 +71,20 @@ public class BuilderImpl implements Builder {
     }
 
     @Override
-    public SmppClient newClient() {
-        return new SmppClient(this);
+    public String getHost() {
+        return host;
     }
+
     @Override
-    public MultiSessionSmppClient client() {
+    public int getPort() {
+        return port;
+    }
+
+    @Override
+    public ProtocolClient<BasePDU> newSession() {
+        if (client==null)
+         client=new SmppClient<BasePDU>(this);
+        client.addBuilder(this);
         return client;
     }
 

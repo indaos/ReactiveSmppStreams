@@ -1,6 +1,6 @@
-package com.mobico.resmpprest.smpp.pdu;
+package com.mobico.ress.resmpp.pdu;
 
-import com.mobico.resmpprest.smpp.SmppClient;
+import com.mobico.ress.resmpp.SmppClient;
 
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
