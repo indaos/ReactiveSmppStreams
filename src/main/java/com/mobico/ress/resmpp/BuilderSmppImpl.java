@@ -7,6 +7,7 @@ import com.mobico.ress.util.ProtocolClient;
 
 public class BuilderSmppImpl implements Builder {
 
+    private static SmppClient client = null;
     private String bindip;
     private String host;
     private int port;
@@ -15,12 +16,9 @@ public class BuilderSmppImpl implements Builder {
     private String systype;
     private int time;
     private int mps;
-    private int index=-1;
-    private static SmppClient client=null;
+    private int index = -1;
 
-    public BuilderSmppImpl(){
-    }
-
+    public BuilderSmppImpl() { }
 
     @Override
     public Builder bindIp(String bindip) {
@@ -80,10 +78,22 @@ public class BuilderSmppImpl implements Builder {
         return port;
     }
 
+    public String getBindip() { return bindip; }
+
+    public String getUsername() { return username; }
+
+    public String getPassword() { return password; }
+
+    public String getSystype() { return systype; }
+
+    public int getTime() { return time; }
+
+    public int getMps() { return mps; }
+
+
     @Override
     public ProtocolClient<BasePDU> newSession() {
-        if (client==null)
-         client=new SmppClient<BasePDU>(this);
+        if (client == null) client = new SmppClient<BasePDU>(this);
         client.addBuilder(this);
         return client;
     }

@@ -108,9 +108,7 @@ public class TestServer<T> {
     }
 
 
-    public TestServer() {
-
-    }
+    public TestServer() { }
 
     TestServer withPort(int port) {
         this.port = port;
@@ -183,7 +181,7 @@ public class TestServer<T> {
 
                         if (channel.getSelector() == null)
                             continue;
-                        channel.selector.select(10);
+                        channel.selector.select(1);
                         Set<SelectionKey> selectedKeys = channel.selector.selectedKeys();
                         Iterator<SelectionKey> i = selectedKeys.iterator();
                         while (i.hasNext()) {

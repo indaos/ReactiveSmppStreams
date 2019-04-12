@@ -6,6 +6,7 @@ import com.mobico.ress.util.ProtocolClient;
 
 public class BuilderMsgImpl implements Builder {
 
+    private static MessagesProcessor client = null;
     private String bindip;
     private String host;
     private int port;
@@ -14,11 +15,9 @@ public class BuilderMsgImpl implements Builder {
     private String systype;
     private int time;
     private int mps;
-    private int index=-1;
-    private static MessagesProcessor client=null;
+    private int index = -1;
 
-    public BuilderMsgImpl(){
-    }
+    public BuilderMsgImpl() { }
 
 
     @Override
@@ -70,9 +69,7 @@ public class BuilderMsgImpl implements Builder {
     }
 
     @Override
-    public String getHost() {
-        return host;
-    }
+    public String getHost() { return host; }
 
     @Override
     public int getPort() {
@@ -81,8 +78,7 @@ public class BuilderMsgImpl implements Builder {
 
     @Override
     public ProtocolClient<String> newSession() {
-        if (client==null)
-            client=new MessagesProcessor<Packet>(this);
+        if (client == null) client = new MessagesProcessor<Packet>(this);
         client.addBuilder(this);
         return client;
     }

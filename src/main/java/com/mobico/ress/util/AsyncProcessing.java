@@ -18,9 +18,7 @@ public class AsyncProcessing<T> extends SocketClient {
     private ConcurrentLinkedQueue<PDU> input_queue = new ConcurrentLinkedQueue();
     private Function<ByteBuffer,T> parser;
 
-    public AsyncProcessing() {
-
-    }
+    public AsyncProcessing() { }
 
     public AsyncProcessing(Builder conf) {
         super(conf);
@@ -175,23 +173,5 @@ public class AsyncProcessing<T> extends SocketClient {
 
     protected void loadNextPduFromPublisher() { }
 
-    private void print_buff(ByteBuffer b) {
-        byte[] a=b.array();
-        int max=a.length>100?100:a.length;
-        String s="";
-        int c=0;
-        for(int i=0;i<max;i++) {
-            s+=Integer.toHexString(a[i]&0xff);
-            if (c==16) {
-                s+="*";
-                c=0;
-            }
-            else {
-                s+=",";
-                c++;
-            }
-        }
-        System.out.println(s);
-    }
 
 }

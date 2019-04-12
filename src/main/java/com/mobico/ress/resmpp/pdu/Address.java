@@ -4,24 +4,23 @@ import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 
 public class Address implements BaseOps {
-    private byte ton =0;
+
+    private byte ton = 0;
     private byte npi = 0;
     private String address = "";
 
-    private Address(){
-
-    }
+    private Address() { }
 
     public static Address allocate() {
-        Address addr=new Address();
-        addr.setTon((byte)0);
-        addr.setNpi((byte)0);
+        Address addr = new Address();
+        addr.setTon((byte) 0);
+        addr.setNpi((byte) 0);
         addr.setAddress("");
         return addr;
     }
 
     public int getLength() {
-        return getAddress().length()+3;
+        return getAddress().length() + 3;
     }
 
     public boolean setBytes(ByteBuffer buff) {
@@ -34,19 +33,19 @@ public class Address implements BaseOps {
             setAddress(address);
 
             return true;
-        }catch(BufferUnderflowException e) {
+        } catch (BufferUnderflowException e) {
         }
         return false;
     }
 
     public ByteBuffer getBytes() {
 
-            ByteBuffer buff=ByteBuffer.allocate(2+address.length()+1);
-            buff.put(ton);
-            buff.put(npi);
-            putString(buff,address);
+        ByteBuffer buff = ByteBuffer.allocate(2 + address.length() + 1);
+        buff.put(ton);
+        buff.put(npi);
+        putString(buff, address);
 
-            return buff.flip();
+        return buff.flip();
     }
 
     public byte getTon() {
@@ -70,7 +69,9 @@ public class Address implements BaseOps {
     }
 
     public void setAddress(String address) {
-        if (address==null) return;
+        if (address == null) {
+            return;
+        }
         this.address = address;
     }
 

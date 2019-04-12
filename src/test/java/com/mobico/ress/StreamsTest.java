@@ -3,6 +3,7 @@ package com.mobico.ress;
 import com.mobico.ress.resmpp.SmppClient;
 import com.mobico.ress.resmpp.pdu.BasePDU;
 import com.mobico.ress.resmpp.pdu.BindResp;
+import com.mobico.ress.resmpp.pdu.Deliver;
 import com.mobico.ress.restream.MessagesProcessor;
 import com.mobico.ress.restream.Packet;
 import org.junit.After;
@@ -13,6 +14,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Date;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.logging.*;
 
@@ -40,6 +42,7 @@ public class StreamsTest {
         LOG.setLevel(Level.INFO);
         LOG.setUseParentHandlers(false);
     }
+
 
     public StreamsTest(){
 
@@ -86,24 +89,29 @@ public class StreamsTest {
         appServer.close();
         LOG.info("Local App Server stopped: "+appServer.getPort());
 
-    //    smscServer.close();
-    //    LOG.info("Local Smsc Server stopped: "+smscServer.getPort());
+       smscServer.close();
+        LOG.info("Local Smsc Server stopped: "+smscServer.getPort());
 
     }
 
 
+
     @Test
-    public void simpleTest() throws InterruptedException {
+    public void simpleBidirectionalTest() throws InterruptedException {
 
         SmppClient.resetSeqNumber();
+        AtomicInteger tmpVar1=new AtomicInteger(0);
+        AtomicInteger tmpVar2=new AtomicInteger(0);
 
         smscServer.setHandler((pdu) -> {
-            LOG.info("smsc got: " + pdu.toString());
+            int n=tmpVar1.addAndGet(pdu.getSequenceNumber());
+            LOG.info("smsc got["+n+"]: " + pdu.toString());
             return new BindResp().of(pdu).getBytes().array();
         });
 
         appServer.setHandler((pdu) -> {
-            LOG.info("app server got: " + pdu.toString());
+            int n=tmpVar2.incrementAndGet();
+            LOG.info("app server got["+n+"]: " + pdu.toString());
             return null;
         });
 
@@ -132,23 +140,47 @@ public class StreamsTest {
         appClient.processing();
         smppClient.processing();
 
-        appServer.send(new Packet()
-                        .addValue("originated from app#1")
-                        .addValue("originated from app#2"));
+        Thread thr_app=new Thread() {
+            public void run() {
+                    for(int i=0;i<100;i++) {
+                        appServer.send(new Packet()
+                            .addValue("originated from app#1")
+                            .addValue("originated from app#2"));
+                    }
+                    LOG.info("app server finished");
+                }
+        };
 
-      //  Packet pdu;
-        //assertNotNull(pdu=appClient.getNextPdu(20000));
-       // LOG.info("got: "+pdu.toString());
+        Thread thr_smsc=new Thread() {
+            public void run() {
+                for(int i=0;i<100;i++) {
+                    smscServer.send(new Deliver()
+                            .message("Hello!")
+                            .setseqId());
+                }
+                LOG.info("smsc finished");
+            }
+        };
 
-       Thread.sleep(5000);
+        thr_smsc.start();
+        thr_app.start();
 
-      //  smscServer.send(new Deliver()
-      //          .message("originated from smsc")
-       //         .setseqId());
+        thr_app.join();
+        thr_smsc.join();
+
+        Thread.sleep(2000);
+
+        LOG.info(">"+tmpVar1.get()+","+tmpVar2.get());
+        assertTrue(tmpVar1.get()==40100);
+        assertTrue(tmpVar2.get()==100);
 
 
-       // appClient.closeAll();
-       // smppClient.closeAll();
+        LOG.info("finished");
+
+        appClient.closeAll();
+        smppClient.closeAll();
+
+
 
     }
 

@@ -73,9 +73,7 @@ public class SocketClient {
         }
     }
 
-    public SocketClient() {
-
-    }
+    public SocketClient() { }
 
     public SocketClient(Builder conf) {
         this.conf=conf;

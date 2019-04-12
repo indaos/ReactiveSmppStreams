@@ -16,9 +16,7 @@ public class MessagesProcessor<T extends Packet> extends AsyncProcessing<T> impl
     private int c_cptr=0;
     private Flow.Subscription subscription;
 
-    public MessagesProcessor(){
-
-    }
+    public MessagesProcessor(){ }
 
     public MessagesProcessor(BuilderMsgImpl conf) {
         super(conf);
@@ -66,7 +64,7 @@ public class MessagesProcessor<T extends Packet> extends AsyncProcessing<T> impl
     }
 
     protected void loadNextPduFromPublisher() {
-       if(subscription!=null) subscription.request(1);
+       if(subscription!=null) subscription.request(2);
     }
 
     /*SUBSCRIBER*/
@@ -80,7 +78,7 @@ public class MessagesProcessor<T extends Packet> extends AsyncProcessing<T> impl
         if (item instanceof Deliver) {
             Deliver pdu=(Deliver)item;
             byte[] msg=pdu.getMessage();
-            send(Packet.newPacket(ByteBuffer.wrap(msg)));
+            send(Packet.newPacket(msg));
         }
     }
 

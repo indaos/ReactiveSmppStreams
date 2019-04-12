@@ -21,8 +21,7 @@ public class SmppClient<T extends BasePDU>  extends AsyncProcessing<T>  implemen
     private int c_cptr=0;
     private Flow.Subscription subscription;
 
-    private SmppClient() {
-    }
+    private SmppClient() { }
 
     public SmppClient(BuilderSmppImpl conf) {
         super(conf);
@@ -87,7 +86,7 @@ public class SmppClient<T extends BasePDU>  extends AsyncProcessing<T>  implemen
             public void request(long count) {
                     int received=0;
                     while(received!=count) {
-                        T pdu=getNextPdu(100);
+                        T pdu=getNextPdu(0);
                         if (pdu!=null) {
                             subscriber.onNext(pdu);
                             received++;

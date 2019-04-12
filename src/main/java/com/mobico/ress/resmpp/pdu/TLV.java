@@ -6,9 +6,7 @@ public class TLV {
     private short tag =0;
     private ByteBuffer value=null;
 
-    public TLV(){
-
-    }
+    public TLV(){ }
 
     public void setTag(short tag) {
         this.tag=tag;
