@@ -110,8 +110,7 @@ public class AsyncProcessing<T> extends SocketClient {
 
                         loadNextPduFromPublisher();
 
-                        if (channel.getSelector()==null)
-                            continue;
+                        if (channel.getSelector()==null) continue;
 
                         channel.getSelector().select(2);
                         Set<SelectionKey> selectedKeys = channel.getSelector().selectedKeys();

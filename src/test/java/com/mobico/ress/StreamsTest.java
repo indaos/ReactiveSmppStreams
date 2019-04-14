@@ -2,7 +2,6 @@ package com.mobico.ress;
 
 import com.mobico.ress.resmpp.SmppClient;
 import com.mobico.ress.resmpp.pdu.BasePDU;
-import com.mobico.ress.resmpp.pdu.BindResp;
 import com.mobico.ress.resmpp.pdu.Deliver;
 import com.mobico.ress.restream.MessagesProcessor;
 import com.mobico.ress.restream.Packet;
@@ -23,6 +22,9 @@ import static org.junit.Assert.assertTrue;
 public class StreamsTest {
     private final int BASE_APP_PORT = 9000;
     private final int BASE_SMSC_PORT = 8000;
+
+    private final int MAX_MSG_PER_THREAD = 1000;
+    private final int MAX_ACCEPT_DUR = 10000;
 
     private TestServer<Packet> appServer;
     private TestServer<BasePDU> smscServer;
@@ -100,18 +102,16 @@ public class StreamsTest {
         SmppClient.resetSeqNumber();
         AtomicInteger tmpVar1=new AtomicInteger(0);
         AtomicInteger tmpVar2=new AtomicInteger(0);
-        AtomicInteger tmpVar3=new AtomicInteger(0);
 
         smscServer.setHandler((pdu) -> {
-            int n=tmpVar1.addAndGet(pdu.getSequenceNumber());
-            int n2=tmpVar3.incrementAndGet();
-           LOG.info("smsc ["+n+","+n2+"]: " + pdu.toString());
-            return new BindResp().of(pdu).getBytes().array();
+            int n=tmpVar1.incrementAndGet();
+            LOG.info("smsc ["+n+"]: " + pdu.toString());
+            return  BasePDU.of(pdu).getBytes().array();
         });
 
         appServer.setHandler((pdu) -> {
             int n=tmpVar2.incrementAndGet();
-          // LOG.info("app server ["+n+"]: " + pdu.toString());
+            LOG.info("app server ["+n+"]: " + pdu.toString());
             return null;
         });
 
@@ -142,7 +142,7 @@ public class StreamsTest {
 
         Thread thr_app=new Thread() {
             public void run() {
-                    for(int i=0;i<1000;i++) {
+                    for(int i=0;i<MAX_MSG_PER_THREAD;i++) {
                         appServer.send(new Packet()
                             .addValue("originated from app#1"));
                     }
@@ -152,7 +152,7 @@ public class StreamsTest {
 
         Thread thr_smsc=new Thread() {
             public void run() {
-                for(int i=0;i<1000;i++) {
+                for(int i=0;i<MAX_MSG_PER_THREAD;i++) {
                     smscServer.send(new Deliver()
                             .message("Hello!")
                             .setseqId());
@@ -170,15 +170,16 @@ public class StreamsTest {
 
         long start=System.currentTimeMillis();
 
-        while(tmpVar1.get()!=1500500 && tmpVar2.get()!=1000) {
+        while(tmpVar1.get()!=MAX_MSG_PER_THREAD || tmpVar1.get()!=tmpVar2.get()) {
             Thread.sleep(1);
-           if (System.currentTimeMillis()-start> 10000)
+           if (System.currentTimeMillis()-start> MAX_ACCEPT_DUR)
                assertTrue(false);
         }
-
         long end=System.currentTimeMillis();
 
-        LOG.info("finished: "+(end-start)+" ms ("+(float)2000/(end-start)*1000+" msg/sec)");
+        long duration=end-start;
+
+        LOG.info("finished: "+duration+" ms ("+(float)MAX_MSG_PER_THREAD*2/duration*1000+" msg/sec)");
 
         appClient.closeAll();
         smppClient.closeAll();

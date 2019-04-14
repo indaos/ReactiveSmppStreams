@@ -47,7 +47,6 @@ public class MessagesProcessor<T extends Packet> extends AsyncProcessing<T> impl
         });
     }
 
-    /*PUBLISHER*/
     @Override
     public void subscribe(Flow.Subscriber subscriber) {
         subscriber.onSubscribe(new Flow.Subscription() {
@@ -56,10 +55,8 @@ public class MessagesProcessor<T extends Packet> extends AsyncProcessing<T> impl
                 int received=0;
                 while(received!=count) {
                     T  pdu=getNextPdu(0);
-                    if (pdu!=null) {
-                        subscriber.onNext(pdu);
-                        received++;
-                    } else break;
+                    if (pdu!=null) { subscriber.onNext(pdu);received++; }
+                    else break;
                 }
             }
             @Override
@@ -74,7 +71,6 @@ public class MessagesProcessor<T extends Packet> extends AsyncProcessing<T> impl
 
     protected void unsubcribeAll() { if(subscription!=null) subscription.cancel(); subscription=null; }
 
-    /*SUBSCRIBER*/
     @Override
     public void onSubscribe(Flow.Subscription subscription) {
         this.subscription=subscription;

@@ -11,7 +11,7 @@ public class Packet {
 
     public static Packet newPacket(ByteBuffer buff) {
         int length = buff.get();
-        if (length <= 0) return null;
+        if (length <= 0 || length>Byte.MAX_VALUE) return null;
 
         Packet packet = new Packet();
         byte[] arr = new byte[length];
