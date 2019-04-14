@@ -166,8 +166,12 @@ public class SocketClient {
         }catch(IOException e) {}
     }
 
-    public void closeAll() {
+    public void closeAll() throws InterruptedException {
+
         isShutdown =true;
+
+        Thread.sleep(1000);
+
         for (ChannelDesc channel : channels) {
             try {
                 channel.socket.close();

@@ -70,7 +70,6 @@ public class SmppTest {
                     }
                 })
                 .start();
-        server.run();
 
         assertTrue(server.isOpen());
 
@@ -112,7 +111,7 @@ public class SmppTest {
         SmppClient.resetSeqNumber();
 
         server.setHandler((pdu)->{
-                 LOG.info("server got: "+pdu.toString());
+                 LOG.info("server: "+pdu.toString());
                 BasePDU resp=switch(pdu.getCommandId()){
                     case BaseOps.BIND_TRANSCEIVER -> new BindResp().of(pdu);
                     default->null;
@@ -126,21 +125,18 @@ public class SmppTest {
                         tempStream.reset();
                         return res;
                     }
-                }catch(IOException|NullPointerException e){
-                   // e.printStackTrace();
-                }
+                }catch(IOException|NullPointerException e){ e.printStackTrace(); }
                 return null;
         });
 
         ProtocolClient<BasePDU> client = SmppClient.builder()
                 .bindIp("localhost").host("localhost").port(server.getPort())
-                .username("guest").password("guest")
+                .username("guest").password("secret")
                 .systype("ReSmpp").timeout(30 * 1000)
                 .maxmps(2)
                 .newSession();
 
         assertTrue(client.connect(0));
-
         client.processing();
 
         for(int i=0;i<100;i++) {
@@ -151,8 +147,7 @@ public class SmppTest {
                     .setTon((byte) 1)
                     .setNpi((byte) 1)
                     .setseqId());
-            LOG.info("send: "+pdu.toString());
-
+            LOG.info("sent: "+pdu.toString());
             Thread.sleep(new Random().nextInt(200));
         }
 
@@ -161,17 +156,12 @@ public class SmppTest {
         for(int i=0;i<100;i++) {
             BasePDU pdu;
             assertNotNull(pdu=client.getNextPdu(DEFAUL_READ_TIMEOUT));
-
             assertTrue(pdu.getSequenceNumber()==(i+1));
-
-            LOG.info("got: "+pdu.toString());
+            LOG.info("received: "+pdu.toString());
         }
 
-
         client.close(0);
-
         LOG.info("***********************");
-
 
     }
 
@@ -182,7 +172,7 @@ public class SmppTest {
         SmppClient.resetSeqNumber();
 
         server.setHandler((pdu)->{
-                LOG.info("server got: "+pdu.toString());
+                LOG.info("server: "+pdu.toString());
 
                 BasePDU resp=BasePDU.of(pdu);
                 if (resp==null) return null;
@@ -202,14 +192,13 @@ public class SmppTest {
 
         ProtocolClient<BasePDU> client = SmppClient.builder()
                     .bindIp("localhost").host("localhost").port(server.getPort())
-                    .username("guest").password("guest")
+                    .username("guest").password("secret")
                     .systype("ReSmpp").timeout(30 * 1000)
                     .maxmps(2)
                     .newSession();
 
-            assertTrue(client.connect(0));
-
-            client.processing();
+        assertTrue(client.connect(0));
+        client.processing();
 
         BasePDU pdu;
         BasePDU resp;
@@ -220,46 +209,43 @@ public class SmppTest {
                 .setTon((byte) 1)
                 .setNpi((byte) 1)
                 .setseqId());
-            LOG.info("send: "+pdu.toString());
-
+        LOG.info("sent: "+pdu.toString());
 
         assertNotNull(resp=client.getNextPdu(DEFAUL_READ_TIMEOUT));
         assertTrue(resp instanceof BindResp);
         assertTrue(resp.getSequenceNumber()==pdu.getSequenceNumber());
-        LOG.info("got: "+resp.toString());
+        LOG.info("received: "+resp.toString());
 
         client.send(0,pdu=new Submit()
                 .message("Hello!")
                 .setseqId());
-        LOG.info("send: "+pdu.toString());
+        LOG.info("sent: "+pdu.toString());
 
 
         assertNotNull(resp=client.getNextPdu(DEFAUL_READ_TIMEOUT));
         assertTrue(resp instanceof SubmitResp);
         assertTrue(resp.getSequenceNumber()==pdu.getSequenceNumber());
-        LOG.info("got: "+resp.toString());
+        LOG.info("received: "+resp.toString());
 
         assertNotNull(resp=client.getNextPdu(DEFAUL_READ_TIMEOUT));
         assertTrue(resp instanceof Deliver);
-        LOG.info("got: "+resp.toString());
+        LOG.info("received: "+resp.toString());
 
         client.send(0,resp=BasePDU.of(resp));
-        LOG.info("send: "+resp.toString());
+        LOG.info("sent: "+resp.toString());
 
         client.send(0,pdu=new Unbind().setseqId());
-        LOG.info("send: "+pdu.toString());
+        LOG.info("sent: "+pdu.toString());
 
         assertNotNull(resp=client.getNextPdu(DEFAUL_READ_TIMEOUT));
 
         assertTrue(resp instanceof UnbindResp);
         assertTrue(resp.getSequenceNumber()==pdu.getSequenceNumber());
 
-        LOG.info("got: "+resp.toString());
-
+        LOG.info("received: "+resp.toString());
 
         client.close(0);
         LOG.info("***********************");
-
     }
 
     @Test
@@ -276,19 +262,19 @@ public class SmppTest {
                         .setNpi((byte) 1));
                 BasePDU pdu;
                 assertNotNull(pdu = client.getNextPdu(DEFAUL_READ_TIMEOUT));
-                LOG.info("client got: " + pdu.toString());
+                LOG.info("client: " + pdu.toString());
             }
             return true;
         };
 
         server.setHandler((pdu) -> {
-            LOG.info("server got: " + pdu.toString());
+            LOG.info("server: " + pdu.toString());
             return new BindResp().of(pdu).getBytes().array();
         });
 
         ProtocolClient<BasePDU> client = SmppClient.builder()
                 .bindIp("localhost").host("localhost").port(server.getPort())
-                .username("guest").password("guest")
+                .username("guest").password("secret")
                 .systype("ReSmpp").timeout(30 * 1000)
                 .maxmps(1)
                 .newSession();
@@ -296,7 +282,7 @@ public class SmppTest {
 
         SmppClient.builder()
                 .bindIp("localhost").host("localhost").port(server.getPort())
-                .username("guest").password("guest")
+                .username("guest").password("secret")
                 .systype("ReSmpp").timeout(30 * 1000)
                 .maxmps(1)
                 .newSession();
@@ -324,30 +310,6 @@ public class SmppTest {
 
         LOG.info("***********************");
 
-    }
-
-
-    public void  outsideSmscTest() {
-        ProtocolClient<BasePDU> client = SmppClient.builder()
-                .bindIp(OUTSIDE_SMSC_HOST).host(OUTSIDE_SMSC_HOST).port(OUTSIDE_SMSC_PORT)
-                .username("guest").password("guest")
-                .systype("ReSmpp").timeout(30 * 1000)
-                .maxmps(1)
-                .newSession();
-
-        assertTrue(client.connect(0));
-        client.processing();
-
-        client.send(0,new Bind().setSystemId("sys")
-                .setPassword("secret")
-                .setSysType("mock")
-                .setTon((byte)1)
-                .setNpi((byte)1));
-
-        BasePDU pdu;
-        assertNotNull(client.getNextPdu(DEFAUL_READ_TIMEOUT));
-
-        client.close(0);
     }
 
 

@@ -14,6 +14,10 @@ import java.util.concurrent.Flow;
 import java.util.concurrent.Flow.Subscription;
 import java.util.function.Function;
 
+//
+// Simple asynchronous SMPP client
+// Supports multi connections to SMSC
+// also implements the reactive streams interface (Subscriber+Publisher)
 
 public class SmppClient<T extends BasePDU>  extends AsyncProcessing<T>  implements Flow.Processor,ProtocolClient<T> {
 

@@ -60,7 +60,6 @@ public class StreamsTest {
                     }
                 })
                 .start();
-        appServer.run();
 
         assertTrue(appServer.isOpen());
 
@@ -76,7 +75,6 @@ public class StreamsTest {
                     }
                 })
                 .start();
-        smscServer.run();
 
         assertTrue(smscServer.isOpen());
 
@@ -102,30 +100,32 @@ public class StreamsTest {
         SmppClient.resetSeqNumber();
         AtomicInteger tmpVar1=new AtomicInteger(0);
         AtomicInteger tmpVar2=new AtomicInteger(0);
+        AtomicInteger tmpVar3=new AtomicInteger(0);
 
         smscServer.setHandler((pdu) -> {
             int n=tmpVar1.addAndGet(pdu.getSequenceNumber());
-            LOG.info("smsc got["+n+"]: " + pdu.toString());
+            int n2=tmpVar3.incrementAndGet();
+           LOG.info("smsc ["+n+","+n2+"]: " + pdu.toString());
             return new BindResp().of(pdu).getBytes().array();
         });
 
         appServer.setHandler((pdu) -> {
             int n=tmpVar2.incrementAndGet();
-            LOG.info("app server got["+n+"]: " + pdu.toString());
+          // LOG.info("app server ["+n+"]: " + pdu.toString());
             return null;
         });
 
 
         SmppClient<BasePDU> smppClient =(SmppClient) SmppClient.builder()
                 .bindIp("localhost").host("localhost").port(smscServer.getPort())
-                .username("guest").password("guest")
+                .username("guest").password("secret")
                 .systype("ReSmpp").timeout(30 * 1000)
                 .maxmps(2)
                 .newSession();
 
         MessagesProcessor<Packet> appClient = (MessagesProcessor)MessagesProcessor.builder()
                 .bindIp("localhost").host("localhost").port(appServer.getPort())
-                .username("guest").password("guest")
+                .username("guest").password("secret")
                 .systype("ReSmpp").timeout(30 * 1000)
                 .maxmps(2)
                 .newSession();
@@ -142,10 +142,9 @@ public class StreamsTest {
 
         Thread thr_app=new Thread() {
             public void run() {
-                    for(int i=0;i<100;i++) {
+                    for(int i=0;i<1000;i++) {
                         appServer.send(new Packet()
-                            .addValue("originated from app#1")
-                            .addValue("originated from app#2"));
+                            .addValue("originated from app#1"));
                     }
                     LOG.info("app server finished");
                 }
@@ -153,7 +152,7 @@ public class StreamsTest {
 
         Thread thr_smsc=new Thread() {
             public void run() {
-                for(int i=0;i<100;i++) {
+                for(int i=0;i<1000;i++) {
                     smscServer.send(new Deliver()
                             .message("Hello!")
                             .setseqId());
@@ -168,18 +167,21 @@ public class StreamsTest {
         thr_app.join();
         thr_smsc.join();
 
-        Thread.sleep(2000);
 
-        LOG.info(">"+tmpVar1.get()+","+tmpVar2.get());
-        assertTrue(tmpVar1.get()==40100);
-        assertTrue(tmpVar2.get()==100);
+        long start=System.currentTimeMillis();
 
+        while(tmpVar1.get()!=1500500 && tmpVar2.get()!=1000) {
+            Thread.sleep(1);
+           if (System.currentTimeMillis()-start> 10000)
+               assertTrue(false);
+        }
 
-        LOG.info("finished");
+        long end=System.currentTimeMillis();
+
+        LOG.info("finished: "+(end-start)+" ms ("+(float)2000/(end-start)*1000+" msg/sec)");
 
         appClient.closeAll();
         smppClient.closeAll();
-
 
 
     }

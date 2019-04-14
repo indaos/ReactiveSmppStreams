@@ -46,7 +46,9 @@ public class AsyncProcessing<T> extends SocketClient {
         long start = System.currentTimeMillis();
         while ((res = getNextInputPDU()) == null) {
             try {
-                Thread.sleep(5);
+               if (timeout_ms>0)
+                   Thread.sleep(5);
+               else break;
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -103,14 +105,18 @@ public class AsyncProcessing<T> extends SocketClient {
         int remaining=0;
         while(!isShutdown) {
                 try {
-                    loadNextPduFromPublisher();
 
                     for (ChannelDesc channel : channels) {
+
+                        loadNextPduFromPublisher();
+
                         if (channel.getSelector()==null)
                             continue;
-                        channel.getSelector().select(10);
+
+                        channel.getSelector().select(2);
                         Set<SelectionKey> selectedKeys = channel.getSelector().selectedKeys();
                         Iterator<SelectionKey> i = selectedKeys.iterator();
+
                         while (i.hasNext()) {
                             SelectionKey key = i.next();
                             if (!key.isValid())
@@ -163,15 +169,19 @@ public class AsyncProcessing<T> extends SocketClient {
                                         key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE);
                                 }
                             }
+
                             i.remove();
                         }
+
                     }
+
                 }catch(IOException | NullPointerException e) { }
             }
         isShutdown=false;
+        unsubcribeAll();
     }
 
     protected void loadNextPduFromPublisher() { }
-
+    protected void unsubcribeAll() { }
 
 }

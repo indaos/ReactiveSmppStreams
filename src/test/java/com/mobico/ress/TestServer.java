@@ -125,6 +125,8 @@ public class TestServer<T> {
         ChannelDesc desc = new ChannelDesc(selector,server);
         channels.add(desc);
 
+        run();
+
         return this;
     }
 
@@ -169,7 +171,7 @@ public class TestServer<T> {
         return true;
     }
 
-    public void run() {
+    private void run() {
         ExecutorService main_loop = Executors.newSingleThreadExecutor();
         main_loop.execute(() -> {
             int remaining=0;

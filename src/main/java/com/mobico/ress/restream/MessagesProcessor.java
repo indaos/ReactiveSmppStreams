@@ -11,6 +11,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Flow;
 import java.util.function.Function;
 
+
+// Simple asynchronous TCP client
+// Supports multi connections to Server
+// also implements the reactive streams interface (Subscriber+Publisher)
+
 public class MessagesProcessor<T extends Packet> extends AsyncProcessing<T> implements Flow.Processor, ProtocolClient<T> {
 
     private int c_cptr=0;
@@ -20,7 +25,7 @@ public class MessagesProcessor<T extends Packet> extends AsyncProcessing<T> impl
 
     public MessagesProcessor(BuilderMsgImpl conf) {
         super(conf);
-        setUpParser();
+        setParser();
     }
 
 
@@ -33,7 +38,7 @@ public class MessagesProcessor<T extends Packet> extends AsyncProcessing<T> impl
         send(c_cptr++,pdu);
     }
 
-    private void setUpParser() {
+    private void setParser() {
         super.setParser(new Function<ByteBuffer,T>() {
             @Override
             public T apply(ByteBuffer buffer) {
@@ -64,8 +69,10 @@ public class MessagesProcessor<T extends Packet> extends AsyncProcessing<T> impl
     }
 
     protected void loadNextPduFromPublisher() {
-       if(subscription!=null) subscription.request(2);
+       if(subscription!=null) subscription.request(1);
     }
+
+    protected void unsubcribeAll() { if(subscription!=null) subscription.cancel(); subscription=null; }
 
     /*SUBSCRIBER*/
     @Override
