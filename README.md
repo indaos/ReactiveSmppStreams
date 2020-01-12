@@ -8,7 +8,7 @@ The other asynchronous client  using reactive streams (java.util.concurrent.Flow
 </p>
 <p>
 
-Thus, communication between many SMSC (Short Message Service Center) and many application servers can be served by only two threads.
+Thus, communication between many SMSC (Short Message Service Center) and many application servers (or micro services) can be served by only two threads.
 </p>
 
 ### connecting to SMSC
