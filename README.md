@@ -19,7 +19,7 @@ ProtocolClient<BasePDU> client = SmppClient.builder()
                 .systype("ReSmpp").timeout(30 * 1000)
                 .maxmps(2)
                 .newSession();
-client.connect(0)
+client.connect(channelNumber)
 </pre>  
 
 ###  processing of PDUs received from all SMSCs.
@@ -33,10 +33,10 @@ client.connect(0)
 
 ### sending PDU
 <pre>
- client.send(0,pdu=new Submit()
+ client.send(channelNumber,pdu=new Submit()
                 .message("Hello!")
                 .setseqId());
- client.close(0)
+ client.close(channelNumber)
 </pre>    
 
 ### SMSC simulator
