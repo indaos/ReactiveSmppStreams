@@ -11,7 +11,7 @@ The other asynchronous client  using reactive streams (java.util.concurrent.Flow
 Thus, communication between many SMSC (Short Message Service Center) and many application servers can be served by only two threads.
 </p>
 
-## connecting to SMSC
+### connecting to SMSC
 <pre>
 ProtocolClient<BasePDU> client = SmppClient.builder()
                 .bindIp("localhost").host("localhost").port(server.getPort())
@@ -21,7 +21,8 @@ ProtocolClient<BasePDU> client = SmppClient.builder()
                 .newSession();
 client.connect(0)
 </pre>  
-##  processing of PDUs received from all SMSCs.
+
+###  processing of PDUs received from all SMSCs.
 <pre>
  client.processing();
  BasePDU pdu;
@@ -29,7 +30,8 @@ client.connect(0)
     pdu=client.getNextPdu(DEFAUL_READ_TIMEOUT));
  }
 </pre>  
-## sending PDU
+
+### sending PDU
 <pre>
  client.send(0,pdu=new Submit()
                 .message("Hello!")
@@ -37,7 +39,7 @@ client.connect(0)
  client.close(0)
 </pre>    
 
-## SMSC simulator
+### SMSC simulator
 <pre>
  server = new TestServer()
           .withPort(port)
@@ -49,7 +51,7 @@ client.connect(0)
           }).start();
 </pre>                
 
-## processing PDUs received from clients
+### processing PDUs received from clients
 <pre>
 server.setHandler((pdu)->{
               BasePDU resp=switch(pdu.getCommandId()){
